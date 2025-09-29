@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { X, Package, Tag, Plus, Trash2, Edit2, Save, RotateCcw, Settings, AlertTriangle } from 'lucide-react';
+import { X, Package, Tag, Plus, Trash2, CreditCard as Edit2, Save, RotateCcw, Settings, AlertTriangle } from 'lucide-react';
 import { useSettings } from '../contexts/SettingsContext';
 
 interface ProductSettingsModalProps {
