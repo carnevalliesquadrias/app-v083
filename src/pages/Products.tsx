@@ -2,16 +2,18 @@ import React, { useState } from 'react';
 import { Plus, Search, CreditCard as Edit2, Trash2, Package, Tag, Wrench, DollarSign, AlertTriangle, TrendingUp } from 'lucide-react';
 import { useApp, Product } from '../contexts/AppContext';
 import ProductModal from '../components/ProductModal';
+import { useSettings } from '../contexts/SettingsContext';
 
 const Products: React.FC = () => {
   const { products, deleteProduct } = useApp();
+  const { productSettings } = useSettings();
   const [searchTerm, setSearchTerm] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('all');
   const [typeFilter, setTypeFilter] = useState('all');
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingProduct, setEditingProduct] = useState<Product | null>(null);
 
-  const categories = [...new Set(products.map(p => p.category))];
+  const categories = productSettings.categories;
   const productTypes = [
     { value: 'material_bruto', label: 'Material Bruto' },
     { value: 'parte_produto', label: 'Parte de Produto' },
@@ -118,13 +120,16 @@ const Products: React.FC = () => {
       {/* Lista de Produtos */}
       <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-6">
         {filteredProducts.map((product) => (
-          const isLowStock = product.current_stock <= product.min_stock;
+          const isLowStock = productSettings.stockAlerts.enabled && 
+            product.current_stock <= (product.min_stock + productSettings.stockAlerts.threshold);
           const profitMargin = product.sale_price 
             ? ((product.sale_price - product.cost_price) / product.sale_price * 100)
             : 0;
           
           return (
-          <div key={product.id} className="bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden">
+          <div key={product.id} className={`bg-white rounded-xl shadow-lg hover:shadow-xl transition-shadow duration-300 overflow-hidden ${
+            isLowStock && productSettings.stockAlerts.highlightLowStock ? 'ring-2 ring-red-300 bg-red-50' : ''
+          }`}>
             <div className="p-6">
               <div className="flex items-start justify-between mb-4">
                 <div className="flex-1">
@@ -165,10 +170,14 @@ const Products: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <span className="text-sm text-gray-600">Estoque Atual:</span>
                   <div className="flex items-center space-x-2">
-                    <span className={`font-bold ${isLowStock ? 'text-red-600' : 'text-green-600'}`}>
+                    <span className={`font-bold ${
+                      isLowStock && productSettings.stockAlerts.highlightLowStock ? 'text-red-600' : 'text-green-600'
+                    }`}>
                       {product.current_stock} {product.unit}
                     </span>
-                    {isLowStock && <AlertTriangle className="h-4 w-4 text-red-500" />}
+                    {isLowStock && productSettings.stockAlerts.highlightLowStock && (
+                      <AlertTriangle className="h-4 w-4 text-red-500" />
+                    )}
                   </div>
                 </div>
                 
@@ -222,14 +231,15 @@ const Products: React.FC = () => {
                 )}
               </div>
               
-              {isLowStock && (
+              {isLowStock && productSettings.stockAlerts.enabled && (
                 <div className="mt-4 p-3 bg-red-50 border border-red-200 rounded-lg">
                   <div className="flex items-center space-x-2">
                     <AlertTriangle className="h-4 w-4 text-red-500" />
                     <span className="text-sm font-medium text-red-800">Estoque Baixo</span>
                   </div>
                   <p className="text-xs text-red-600 mt-1">
-                    Estoque atual: {product.current_stock} | Mínimo: {product.min_stock}
+                    Estoque atual: {product.current_stock} | Mínimo: {product.min_stock} | 
+                    Alerta: {product.min_stock + productSettings.stockAlerts.threshold}
                   </p>
                 </div>
               )}

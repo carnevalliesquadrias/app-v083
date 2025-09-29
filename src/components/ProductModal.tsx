@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { X, Package, FileText, Tag, Plus, Trash2, Search, DollarSign, Calculator } from 'lucide-react';
 import { useApp, Product, ProductComponent } from '../contexts/AppContext';
+import { useSettings } from '../contexts/SettingsContext';
 
 interface ProductModalProps {
   product?: Product | null;
@@ -9,6 +10,7 @@ interface ProductModalProps {
 
 const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
   const { addProduct, updateProduct, products, getAvailableComponents, calculateProductCost } = useApp();
+  const { productSettings } = useSettings();
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -25,8 +27,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
   const [searchTerm, setSearchTerm] = useState('');
   const [showComponentSearch, setShowComponentSearch] = useState(false);
 
-  const units = ['UN', 'M', 'M²', 'M³', 'KG', 'L', 'PC'];
-  const categories = ['Painéis', 'Ferragens', 'Madeiras', 'Vernizes', 'Colas', 'Parafusos', 'Portas', 'Gavetas', 'Prateleiras', 'Estruturas', 'Acessórios', 'Outros'];
+  const units = productSettings.units;
+  const categories = productSettings.categories;
   const productTypes = [
     { value: 'material_bruto', label: 'Material Bruto' },
     { value: 'parte_produto', label: 'Parte de Produto' },
@@ -63,7 +65,8 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
     const productData = {
       ...formData,
       cost_price: finalCostPrice,
-      sale_price: formData.sale_price ? parseFloat(formData.sale_price) : undefined,
+      sale_price: formData.sale_price ? parseFloat(formData.sale_price) : 
+        (finalCostPrice * (1 + productSettings.automation.defaultProfitMargin / 100)),
       current_stock: parseFloat(formData.current_stock) || 0,
       min_stock: parseFloat(formData.min_stock) || 0,
       components
@@ -239,6 +242,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Fornecedor
+                  {!formData.sale_price && productSettings.automation.autoCalculateCosts && (
+                    <span className="text-xs text-gray-500 ml-2">
+                      (Sugerido: R$ {(totalComponentsCost * (1 + productSettings.automation.defaultProfitMargin / 100)).toFixed(2)})
+                    </span>
+                  )}
                 </label>
                 <input
                   type="text"
@@ -247,8 +255,11 @@ const ProductModal: React.FC<ProductModalProps> = ({ product, onClose }) => {
                   onChange={handleChange}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
                   placeholder="Nome do fornecedor"
-                />
-              </div>
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+                  placeholder={productSettings.automation.autoCalculateCosts ? 
+                    (totalComponentsCost * (1 + productSettings.automation.defaultProfitMargin / 100)).toFixed(2) : 
+                    "0,00"
+                  }
             )}
           </div>
 
